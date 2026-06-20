@@ -17,10 +17,17 @@ public class PlayerController : MonoBehaviour
         movement.x = Input.GetAxisRaw("Horizontal");
         movement.y = Input.GetAxisRaw("Vertical");
 
-        // Nggak bisa jalan diagonal
         if (movement.x != 0) 
         {
             movement.y = 0; 
+        }
+
+        if (movement != Vector2.zero)
+        {
+            // Mencari sudut (angle) berdasarkan arah input
+            float angle = Mathf.Atan2(movement.y, movement.x) * Mathf.Rad2Deg;
+            // Memutar objek Pac-Man sesuai sudut tersebut
+            transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
         }
     }
 
