@@ -2,23 +2,36 @@ using UnityEngine;
 
 public class GhostAI : MonoBehaviour
 {
-    // Definisikan state apa saja yang dimiliki hantu
     public enum GhostState { Patrol, Chase }
-    
+
     [Header("Status Saat Ini")]
     public GhostState currentState;
 
     [Header("Pengaturan AI")]
     public Transform player;
     public float speed = 3f;
-    public float chaseDistance = 5f; // Jarak pandang hantu
+    public float chaseDistance = 5f;
+
+    [Header("Pengaturan Mata Hantu")]
+    public SpriteRenderer leftEyeRenderer;  
+    public SpriteRenderer rightEyeRenderer; 
+
+    [Header("Sprite Mata Kiri (Biasanya berakhiran _0)")]
+    public Sprite leftEyeUp;
+    public Sprite leftEyeDown;
+    public Sprite leftEyeLeft;
+    public Sprite leftEyeRight;
+
+    [Header("Sprite Mata Kanan (Biasanya berakhiran _1)")]
+    public Sprite rightEyeUp;
+    public Sprite rightEyeDown;
+    public Sprite rightEyeLeft;
+    public Sprite rightEyeRight;
 
     private void Start()
     {
-        // Set state awal
-        currentState = GhostState.Patrol; 
+        currentState = GhostState.Patrol;
         
-        // Cari objek Pac-Man otomatis berdasarkan Tag
         if (player == null)
         {
             GameObject pacMan = GameObject.FindGameObjectWithTag("Player");
@@ -28,7 +41,6 @@ public class GhostAI : MonoBehaviour
 
     private void Update()
     {
-        // Switch Case yang memisahkan logika tiap state dengan rapi
         switch (currentState)
         {
             case GhostState.Patrol:
@@ -45,35 +57,75 @@ public class GhostAI : MonoBehaviour
 
     private void PatrolBehavior()
     {
-        // Logika saat patroli. Sementara kita biarkan hantunya diam.
+        // Hantu diam saat patroli
     }
 
     private void ChaseBehavior()
     {
-        // Kejar Pac-Man! (Bergerak menuju posisi player)
         if (player != null)
         {
-            transform.position = Vector2.MoveTowards(transform.position, player.position, speed * Time.deltaTime);
+            // Cari tahu jarak antara hantu dan Pac-Man
+            Vector2 direction = player.position - transform.position;
+            Vector2 moveInput = Vector2.zero;
+
+            // Kunci gerakan biar cuma vertikal atau horizontal
+            if (Mathf.Abs(direction.x) > Mathf.Abs(direction.y))
+            {
+                moveInput.x = Mathf.Sign(direction.x); 
+            }
+            else
+            {
+                moveInput.y = Mathf.Sign(direction.y); 
+            }
+
+            // Eksekusi gerakan
+            transform.position = Vector2.MoveTowards(transform.position, (Vector2)transform.position + moveInput, speed * Time.deltaTime);
+
+            // Update mata sesuai arah geraknya
+            UpdateEyes(moveInput);
+        }
+    }
+
+    private void UpdateEyes(Vector2 dir)
+    {
+        // Pastikan kedua mata sudah diisi di Inspector
+        if (leftEyeRenderer == null || rightEyeRenderer == null) return;
+
+        if (dir.x > 0) // Gerak Kanan
+        {
+            leftEyeRenderer.sprite = leftEyeRight;
+            rightEyeRenderer.sprite = rightEyeRight;
+        }
+        else if (dir.x < 0) // Gerak Kiri
+        {
+            leftEyeRenderer.sprite = leftEyeLeft;
+            rightEyeRenderer.sprite = rightEyeLeft;
+        }
+        else if (dir.y > 0) // Gerak Atas
+        {
+            leftEyeRenderer.sprite = leftEyeUp;
+            rightEyeRenderer.sprite = rightEyeUp;
+        }
+        else if (dir.y < 0) // Gerak Bawah
+        {
+            leftEyeRenderer.sprite = leftEyeDown;
+            rightEyeRenderer.sprite = rightEyeDown;
         }
     }
 
     private void CheckForPlayer()
     {
-        // Transisi: Kalau jarak Pac-Man masuk area pandang, ubah state jadi Chase
         if (player != null && Vector2.Distance(transform.position, player.position) < chaseDistance)
         {
             currentState = GhostState.Chase;
-            Debug.Log("Pac-Man terlihat! Hantu ganti state ke CHASE.");
         }
     }
 
     private void CheckDistance()
     {
-        // Transisi: Kalau Pac-Man berhasil kabur jauh, balik lagi ke Patrol
         if (player != null && Vector2.Distance(transform.position, player.position) > chaseDistance)
         {
             currentState = GhostState.Patrol;
-            Debug.Log("Pac-Man hilang. Hantu ganti state ke PATROL.");
         }
     }
 }
