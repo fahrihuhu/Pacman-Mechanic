@@ -1,7 +1,7 @@
 using UnityEngine;
-
 public class GhostAI : MonoBehaviour
 {
+private Rigidbody2D rb;
     public enum GhostState { Patrol, Chase }
 
     [Header("Status Saat Ini")]
@@ -32,6 +32,9 @@ public class GhostAI : MonoBehaviour
     {
         currentState = GhostState.Patrol;
         
+        // Ambil komponen Rigidbody2D hantu
+        rb = GetComponent<Rigidbody2D>();
+        
         if (player == null)
         {
             GameObject pacMan = GameObject.FindGameObjectWithTag("Player");
@@ -57,7 +60,7 @@ public class GhostAI : MonoBehaviour
 
     private void PatrolBehavior()
     {
-        // Hantu diam saat patroli
+        rb.linearVelocity = Vector2.zero;  
     }
 
     private void ChaseBehavior()
@@ -79,8 +82,7 @@ public class GhostAI : MonoBehaviour
             }
 
             // Eksekusi gerakan
-            transform.position = Vector2.MoveTowards(transform.position, (Vector2)transform.position + moveInput, speed * Time.deltaTime);
-
+            rb.linearVelocity = moveInput * speed;
             // Update mata sesuai arah geraknya
             UpdateEyes(moveInput);
         }
