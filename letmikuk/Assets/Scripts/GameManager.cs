@@ -1,51 +1,47 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
-    public static GameManager Instance { get; private set; }
-
-    public int Score { get; private set; }
-    public int Lives { get; private set; } = 3;
+   public static GameManager instance;
+    private int currentPellets;
 
     private void Awake()
     {
-        // Mencegah ada lebih dari 1 GameManager
-        if (Instance != null && Instance != this)
+        if (instance == null) instance = this;
+    }
+
+    public void SetTotalPellets(int count)
+    {
+        currentPellets = count;
+    }
+
+    public void PelletEaten()
+    {
+        currentPellets--;
+        // Tambah skor di sini kalau ada...
+
+        // Cek kalau pellet habis
+        if (currentPellets <= 0)
         {
-            Destroy(this.gameObject);
-            return;
+            LevelComplete();
         }
+    }
+
+    private void LevelComplete()
+    {
+        Debug.Log("Menang! Lanjut ke level berikutnya...");
+        // Memuat level selanjutnya berdasarkan urutan di Build Settings
+        int nextSceneIndex = SceneManager.GetActiveScene().buildIndex + 1;
         
-        Instance = this;
-        DontDestroyOnLoad(gameObject); // Biar gak hancur pas pindah scene
-    }
-
-    // Subscribe ke event (Jadi Subscriber)
-    private void OnEnable()
-    {
-        GameEvents.OnPelletEaten += AddScore;
-    }
-
-    // Unsubscribe biar nggak memory leak / error
-    private void OnDisable()
-    {
-        GameEvents.OnPelletEaten -= AddScore;
-    }
-
-    // Otomatis jalan kalau ada yang manggil TriggerPelletEaten
-    private void AddScore(int amount)
-    {
-        Score += amount;
-        Debug.Log($"Skor Sekarang: {Score}");
-    }
-
-    public void LoseLife()
-    {
-        Lives--;
-        Debug.Log($"Nyawa sisa: {Lives}");
-        if (Lives <= 0)
+        // Cek apakah level selanjutnya ada, kalau mentok balik ke Main Menu (Index 0)
+        if (nextSceneIndex < SceneManager.sceneCountInBuildSettings)
         {
-            GameEvents.TriggerGameOver();
+            SceneManager.LoadScene(nextSceneIndex);
+        }
+        else
+        {
+            SceneManager.LoadScene(0); 
         }
     }
 }

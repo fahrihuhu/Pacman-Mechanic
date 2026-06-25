@@ -1,38 +1,49 @@
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class LevelGenerator : MonoBehaviour
 {
-    [Header("Pengaturan Grid")]
-    public int columns = 10;
-    public int rows = 5;
-    public float spacing = 1.0f; // Jarak antar pellet
+    [Header("Pengaturan Arena")]
+    public Tilemap wallMap;
+    public GameObject pelletPrefab;
 
     private void Start()
     {
-        SpawnPellets();
+        GeneratePellets();
     }
 
-    private void SpawnPellets()
+    private void GeneratePellets()
     {
-        // Titik awal penyebaran (biar pellet-nya posisinya di tengah layar)
-        Vector2 startPos = new Vector2(-columns * spacing / 2f, -rows * spacing / 2f);
+        int totalPellets = 0;
 
-        for (int x = 0; x < columns; x++)
+        // Unity otomatis mencari kotak terluar dari gambar labirin
+        BoundsInt bounds = wallMap.cellBounds;
+
+        foreach (var pos in bounds.allPositionsWithin)
         {
-            for (int y = 0; y < rows; y++)
+            // Ambil posisi lokal ubin
+            Vector3Int localPlace = new Vector3Int(pos.x, pos.y, pos.z);
+
+            // Hanya spawn pellet jika di posisi tersebut benar-benar kosong 
+            // dan posisi tersebut berada di dalam batas area labirin yang digambar
+            if (wallMap.HasTile(localPlace) == false)
             {
-                // Minta 1 Pellet yang lagi nganggur
-                GameObject pellet = PelletPooler.Instance.GetPooledPellet();
-                
-                if (pellet != null)
+                // Cek lagi apakah ubin ini dikelilingi ubin lain biar gak spawn di luar map jauh
+                Vector3 spawnPos = wallMap.GetCellCenterWorld(localPlace);
+
+                // Batasi area spawn agar pellet gak meluber keluar batas luar tembok labirin
+                if (spawnPos.x > -5f && spawnPos.x < 6f && spawnPos.y > -5f && spawnPos.y < 5f)
                 {
-                    // Atur posisinya biar menyebar dalam bentuk Grid (kotak-kotak)
-                    pellet.transform.position = startPos + new Vector2(x * spacing, y * spacing);
-                    
-                    // munculin ke layar
-                    pellet.SetActive(true);
+                    Instantiate(pelletPrefab, spawnPos, Quaternion.identity, transform);
+                    totalPellets++;
                 }
             }
+        }
+
+        // Lapor jumlah total pellet ke GameManager biar sistem menangnya jalan
+        if (GameManager.instance != null)
+        {
+            GameManager.instance.SetTotalPellets(totalPellets);
         }
     }
 }

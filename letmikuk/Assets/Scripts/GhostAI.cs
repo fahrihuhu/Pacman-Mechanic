@@ -2,6 +2,8 @@ using UnityEngine;
 public class GhostAI : MonoBehaviour
 {
 private Rigidbody2D rb;
+
+private Vector2 currentMoveDir; // Ingatan hantu sedang jalan ke arah mana
     public enum GhostState { Patrol, Chase }
 
     [Header("Status Saat Ini")]
@@ -27,6 +29,9 @@ private Rigidbody2D rb;
     public Sprite rightEyeDown;
     public Sprite rightEyeLeft;
     public Sprite rightEyeRight;
+
+    [Header("Pengaturan Sensor Tembok")]
+    public LayerMask wallLayer;
 
     private void Start()
     {
@@ -63,29 +68,79 @@ private Rigidbody2D rb;
         rb.linearVelocity = Vector2.zero;  
     }
 
-    private void ChaseBehavior()
+   private void ChaseBehavior()
     {
-        if (player != null)
+        if (player == null) return;
+
+        // 1. Kalau baru nge-spawn atau mentok tembok depan, cari jalan baru
+        if (currentMoveDir == Vector2.zero || !IsDirectionClear(currentMoveDir))
         {
-            // Cari tahu jarak antara hantu dan Pac-Man
-            Vector2 direction = player.position - transform.position;
-            Vector2 moveInput = Vector2.zero;
-
-            // Kunci gerakan biar cuma vertikal atau horizontal
-            if (Mathf.Abs(direction.x) > Mathf.Abs(direction.y))
-            {
-                moveInput.x = Mathf.Sign(direction.x); 
-            }
-            else
-            {
-                moveInput.y = Mathf.Sign(direction.y); 
-            }
-
-            // Eksekusi gerakan
-            rb.linearVelocity = moveInput * speed;
-            // Update mata sesuai arah geraknya
-            UpdateEyes(moveInput);
+            ChooseNewDirection();
         }
+        else
+        {
+            // 2. Kalau lagi jalan lurus, aktifkan "Mata Samping" untuk ngecek persimpangan!
+            
+            // Jika hantu bergerak Horizontal (Kiri/Kanan)
+            if (currentMoveDir.x != 0)
+            {
+                // Cek apakah posisi Pac-Man ada di Atas / Bawah secara signifikan
+                float yDiff = player.position.y - transform.position.y;
+                if (Mathf.Abs(yDiff) > 0.3f) 
+                {
+                    Vector2 checkDir = new Vector2(0, Mathf.Sign(yDiff));
+                    // Jika lorong pintasan ke atas/bawah KOSONG, langsung belok!
+                    if (IsDirectionClear(checkDir)) currentMoveDir = checkDir;
+                }
+            }
+            // Jika hantu bergerak Vertikal (Atas/Bawah)
+            else if (currentMoveDir.y != 0)
+            {
+                // Cek apakah posisi Pac-Man ada di Kiri / Kanan
+                float xDiff = player.position.x - transform.position.x;
+                if (Mathf.Abs(xDiff) > 0.3f)
+                {
+                    Vector2 checkDir = new Vector2(Mathf.Sign(xDiff), 0);
+                    // Jika lorong pintasan ke kiri/kanan KOSONG, langsung belok!
+                    if (IsDirectionClear(checkDir)) currentMoveDir = checkDir;
+                }
+            }
+        }
+
+        // 3. Eksekusi pergerakan fisika
+        rb.linearVelocity = currentMoveDir * speed;
+        UpdateEyes(currentMoveDir);
+    }
+
+    // Fungsi baru untuk mikir saat mentok tembok
+    private void ChooseNewDirection()
+    {
+        Vector2[] possibleDirs = { Vector2.up, Vector2.down, Vector2.left, Vector2.right };
+        Vector2 bestDir = Vector2.zero;
+        float shortestDist = float.MaxValue;
+
+        foreach (Vector2 dir in possibleDirs)
+        {
+            // ATURAN EMAS: Haram hukumnya putar balik 180 derajat (kecuali awal mulai)
+            if (currentMoveDir != Vector2.zero && dir == -currentMoveDir) continue; 
+
+            // Cek apakah jalannya ngga ada tembok
+            if (IsDirectionClear(dir))
+            {
+                // Simulasi jarak dari titik belokan itu ke Pac-Man
+                float dist = Vector2.Distance((Vector2)transform.position + dir, player.position);
+                if (dist < shortestDist)
+                {
+                    shortestDist = dist;
+                    bestDir = dir;
+                }
+            }
+        }
+
+        // Kalau masuk jalan buntu total (Dead End), baru terpaksa putar balik
+        if (bestDir == Vector2.zero) bestDir = -currentMoveDir;
+
+        currentMoveDir = bestDir;
     }
 
     private void UpdateEyes(Vector2 dir)
@@ -129,5 +184,13 @@ private Rigidbody2D rb;
         {
             currentState = GhostState.Patrol;
         }
+    }
+
+    private bool IsDirectionClear(Vector2 dir)
+    {
+        // Radius bola dikecilkan jadi 0.1f (agar tidak nyenggol tembok samping di lorong sempit)
+        // Jarak pandang dipendekkan jadi 0.25f (agar tidak nembus deteksi tembok di lorong seberang)
+        RaycastHit2D hit = Physics2D.CircleCast(transform.position, 0.1f, dir, 0.25f, wallLayer);
+        return hit.collider == null; 
     }
 }
