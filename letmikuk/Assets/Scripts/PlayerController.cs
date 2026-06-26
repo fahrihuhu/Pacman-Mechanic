@@ -36,4 +36,14 @@ public class PlayerController : MonoBehaviour
         // Eksekusi gerakannya ke fisik Rigidbody
         rb.linearVelocity = movement * speed;
     }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        // Cek apakah objek yang ditabrak punya Tag "Ghost"
+        if (collision.gameObject.CompareTag("Ghost"))
+        {
+            // Lapor kalau Pac-Man mati
+            GameManager.instance.LoseGame();
+        }
+    }
 }

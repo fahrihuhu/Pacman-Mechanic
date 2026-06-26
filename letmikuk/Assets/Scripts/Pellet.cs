@@ -1,18 +1,24 @@
 using UnityEngine;
 
 public class Pellet : MonoBehaviour
-{
-    public int scoreValue = 10;
+{    public AudioClip wakaSound;
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        // Cek apakah yang nabrak itu Pac-Man (menggunakan Tag)
+        // Jika yang menyentuh pelet ini adalah Pac-Man
         if (collision.CompareTag("Player"))
         {
-            // Kasih tahu GameManager kalau pellet ini dimakan
-            GameEvents.TriggerPelletEaten(scoreValue);
+            // Mainkan suara waka-waka di posisi pelet ini berada
+            if (wakaSound != null)
+            {
+                AudioSource.PlayClipAtPoint(wakaSound, transform.position);
+            }
+
+            // Lapor ke GameManager kalau pelet dimakan
+            GameManager.instance.PelletEaten();
             
-            gameObject.SetActive(false);
+            // Hancurkan objek pelet ini
+            Destroy(gameObject);
         }
     }
 }

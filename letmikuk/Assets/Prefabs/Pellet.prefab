@@ -105,6 +105,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15f6634e74c4c7a4f82d78f16ce7ca21, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Pellet
+  wakaSound: {fileID: 8300000, guid: a2e99c8357563c14e9f9275756b758f8, type: 3}
 --- !u!58 &1748352871934091692
 CircleCollider2D:
   m_ObjectHideFlags: 0

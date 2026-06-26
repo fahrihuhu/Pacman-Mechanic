@@ -3,11 +3,15 @@ using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
-   public static GameManager instance;
+    public static GameManager instance;
+    
+    [Header("Informasi Game")]
     private int currentPellets;
+    private bool isGameOver = false; // Penting biar menangnya/kalahnya ngga ke-trigger dobel
 
     private void Awake()
     {
+        // Singleton pattern agar GameManager mudah dipanggil
         if (instance == null) instance = this;
     }
 
@@ -18,29 +22,50 @@ public class GameManager : MonoBehaviour
 
     public void PelletEaten()
     {
-        currentPellets--;
-        // Tambah skor di sini kalau ada...
+        if (isGameOver) return; // Kalau udah game over, pelet jangan dihitung lagi
 
-        // Cek kalau pellet habis
+        currentPellets--;
+        
+        // Cek syarat MENANG: Kalau pelet habis
         if (currentPellets <= 0)
         {
-            LevelComplete();
+            WinGame();
         }
     }
 
-    private void LevelComplete()
+    // Fungsi ini dipanggil dari script Player (Pac-Man) saat nabrak hantu
+    public void LoseGame()
     {
-        Debug.Log("Menang! Lanjut ke level berikutnya...");
-        // Memuat level selanjutnya berdasarkan urutan di Build Settings
-        int nextSceneIndex = SceneManager.GetActiveScene().buildIndex + 1;
+        if (isGameOver) return;
+        isGameOver = true;
         
-        // Cek apakah level selanjutnya ada, kalau mentok balik ke Main Menu (Index 0)
-        if (nextSceneIndex < SceneManager.sceneCountInBuildSettings)
+        Debug.Log("Kalah! Dimakan Hantu!");
+
+        // Panggil suara Game Over dari AudioManager
+        if (AudioManager.Instance != null)
         {
-            SceneManager.LoadScene(nextSceneIndex);
+            AudioManager.Instance.PlayGameOverSFX();
+        }
+        
+        // Mengulang (Restart) level yang sedang dimainkan saat ini
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    private void WinGame()
+    {
+        if (isGameOver) return;
+        isGameOver = true;
+        
+        Debug.Log("Menang! Lanjut Level Selanjutnya!");
+        
+        int nextScene = SceneManager.GetActiveScene().buildIndex + 1;
+        if (nextScene < SceneManager.sceneCountInBuildSettings)
+        {
+            SceneManager.LoadScene(nextScene);
         }
         else
         {
+            // Kembali ke Main Menu jika level sudah mentok
             SceneManager.LoadScene(0); 
         }
     }

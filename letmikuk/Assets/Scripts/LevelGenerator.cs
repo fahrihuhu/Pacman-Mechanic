@@ -3,44 +3,44 @@ using UnityEngine.Tilemaps;
 
 public class LevelGenerator : MonoBehaviour
 {
-    [Header("Pengaturan Arena")]
-    public Tilemap wallMap;
-    public GameObject pelletPrefab;
+    [Header("Pengaturan Pellet Manual via Tilemap")]
+    public Tilemap pelletMap;       
+    public GameObject pelletPrefab; 
+    public Transform pelletParent;  
 
     private void Start()
     {
-        GeneratePellets();
+        SpawnPelletsFromTilemap();
     }
 
-    private void GeneratePellets()
+    private void SpawnPelletsFromTilemap()
     {
+        if (pelletMap == null || pelletPrefab == null) return;
+
         int totalPellets = 0;
+        BoundsInt bounds = pelletMap.cellBounds;
 
-        // Unity otomatis mencari kotak terluar dari gambar labirin
-        BoundsInt bounds = wallMap.cellBounds;
-
+        // Menyusuri hanya tempat yang kamu gambar saja!
         foreach (var pos in bounds.allPositionsWithin)
         {
-            // Ambil posisi lokal ubin
             Vector3Int localPlace = new Vector3Int(pos.x, pos.y, pos.z);
 
-            // Hanya spawn pellet jika di posisi tersebut benar-benar kosong 
-            // dan posisi tersebut berada di dalam batas area labirin yang digambar
-            if (wallMap.HasTile(localPlace) == false)
+            // Jika di titik koordinat ini kamu ada menggambar sesuatu
+            if (pelletMap.HasTile(localPlace))
             {
-                // Cek lagi apakah ubin ini dikelilingi ubin lain biar gak spawn di luar map jauh
-                Vector3 spawnPos = wallMap.GetCellCenterWorld(localPlace);
+                // Ambil posisi koordinat dunia yang presisi di tengah ubin
+                Vector3 spawnPos = pelletMap.GetCellCenterWorld(localPlace);
 
-                // Batasi area spawn agar pellet gak meluber keluar batas luar tembok labirin
-                if (spawnPos.x > -5f && spawnPos.x < 6f && spawnPos.y > -5f && spawnPos.y < 5f)
-                {
-                    Instantiate(pelletPrefab, spawnPos, Quaternion.identity, transform);
-                    totalPellets++;
-                }
+                // Spawn Prefab Pellet asli ke dalam folder pelindung biar Hierarchy rapi
+                Instantiate(pelletPrefab, spawnPos, Quaternion.identity, pelletParent);
+                totalPellets++;
+
+                // Hapus gambar ubinnya dari layar biar gak numpuk dengan objek asli
+                pelletMap.SetTile(localPlace, null);
             }
         }
 
-        // Lapor jumlah total pellet ke GameManager biar sistem menangnya jalan
+        // Lapor jumlah pellet ke GameManager biar sistem menang bekerja
         if (GameManager.instance != null)
         {
             GameManager.instance.SetTotalPellets(totalPellets);
